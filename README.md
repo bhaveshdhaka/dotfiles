@@ -225,8 +225,8 @@ programs.git = {
 };
 ```
 
-**Homebrew cleanup warning:** `configuration.nix` sets `homebrew.onActivation.cleanup = "zap"`.
-That means every time you switch, Homebrew removes any package or cask on your machine that isn't listed in the `brews` and `casks` arrays in `configuration.nix`.
+**Homebrew cleanup warning:** `configuration.nix` sets `homebrew.onActivation.cleanup = "uninstall"` — the captain's standing decision since 2026-08-15 (gentle cleanup; strict `zap` is never re-enabled without the captain's word).
+Every switch still uninstalls any package or cask on your machine that isn't listed in the `brews` and `casks` arrays in `configuration.nix`; `"uninstall"` is gentler than `zap` only in that it keeps a cask's data and config files (`brew uninstall`, not `brew uninstall --zap`).
 If you already have Homebrew stuff installed that isn't in that list, the first switch will uninstall it.
 Read through `brews` and `casks` before you run `bootstrap.sh` or `rebuild.sh` for the first time, and add anything you want to keep.
 
