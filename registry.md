@@ -44,7 +44,12 @@ Declared in `configuration.nix` → `homebrew.casks` (as captured). Updated by
 - `adguard` — **Pkg cask**: upgrade runs `sudo /usr/sbin/installer -pkg … -target /`
   → this is why the scoped sudoers grants `/usr/sbin/installer` NOPASSWD.
 - `baby-menu` — from the `kunchenguid/tap` tap (declared in `homebrew.taps`).
-- `stremio`, `telegram`, `wezterm`, `whatsapp`
+- `telegram`, `wezterm`, `whatsapp`
+- `stremio` — **NOT yet declared in `configuration.nix`** (which declares only
+  adguard, baby-menu, telegram, whatsapp, wezterm): installed via `brew cask`
+  on the machine, pending declaration by the in-flight capture PR. Until that
+  PR lands, an activation (`onActivation.cleanup = "uninstall"`) would remove
+  it; `brew upgrade` keeps it updated in the meantime.
 - `vlc` — **NOT brew-managed today**: the brew cask fails on Homebrew 6.0.1
   (missing `command_wrapper` cask DSL, same bug as alex313031-thorium).
   Installed manually from the get.videolan.org DMG (3.0.23, sha256 verified).
