@@ -1,0 +1,25 @@
+# fm-update.sudoers — scoped NOPASSWD for the unattended update orchestrator
+# ===========================================================================
+# Installed ONCE by the captain, manually, after review (never by the
+# orchestrator itself):
+#
+#   sudo install -m 0440 -o root -g wheel sudoers/fm-update.sudoers /etc/sudoers.d/fm-update
+#   sudo visudo -c -f /etc/sudoers.d/fm-update   # validate
+#
+# Deliberately narrow: exactly two commands, nothing else. There is no
+# blanket NOPASSWD for anything else, no %admin ALL lines, no sudo -i.
+#
+#   1. /run/current-system/sw/bin/darwin-rebuild
+#        the nix-darwin switch used by ./rebuild.sh (the Nix step).
+#   2. /usr/sbin/installer
+#        Homebrew pkg casks (e.g. AdGuard) run `sudo installer -pkg … -target /`
+#        during `brew upgrade`. No other cask type on this machine needs sudo.
+#
+# Use the explicit username for the narrowest scope (matches the repo's
+# hardcoded user in flake.nix). If you ever want ANY admin account to be able
+# to run the orchestrator, replace "bdhaka" with "%admin" — the captain
+# decides; the two command paths above stay the same either way.
+#
+# The two lines, reviewed before install:
+bdhaka ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+bdhaka ALL=(root) NOPASSWD: /usr/sbin/installer

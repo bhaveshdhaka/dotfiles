@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.bhavesh.auto-update.plist — launchd LaunchAgent for the weekly auto-update.
+
+  Runs update-all.sh every Sunday 03:00 (Weekday 0 = Sunday). The Mac must be
+  awake at 03:00; the companion pmset repeat wake (see README "Automatic
+  updates") wakes it from sleep at 02:55 on Sundays.
+
+  INSTALL (captain, once, after reviewing):
+      mkdir -p ~/Library/LaunchAgents ~/Library/Logs/com.bhavesh.auto-update
+      cp com.bhavesh.auto-update.plist ~/Library/LaunchAgents/
+      launchctl load ~/Library/LaunchAgents/com.bhavesh.auto-update.plist
+      # modern alternative: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.bhavesh.auto-update.plist
+
+  VERIFY:
+      launchctl print gui/$(id -u)/com.bhavesh.auto-update | grep -A6 -E "calendar|next fire"
+      launchctl list | grep auto-update
+
+  REMOVE:
+      launchctl bootout gui/$(id -u)/com.bhavesh.auto-update   # or: launchctl unload ...
+      rm ~/Library/LaunchAgents/com.bhavesh.auto-update.plist
+
+  Notes:
+    - LaunchAgents run while the user is logged in (a locked screen is fine);
+      they do NOT run when logged out at the login window. This is a
+      daily-driver Mac, so "logged in + sleeping" is the normal Sunday state.
+    - If the Mac is fully powered off at 03:00 the job is missed; pmset repeat
+      only wakes from sleep, and only reliably on AC power.
+    - The script itself writes timestamped logs to
+      ~/Library/Logs/com.bhavesh.auto-update/ ; the two paths below are a
+      launchd-level fallback capture.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.bhavesh.auto-update</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/bdhaka/.dotfiles/update-all.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/bdhaka</string>
+        <key>PATH</key>
+        <string>/Users/bdhaka/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:/etc/profiles/per-user/bdhaka/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/bdhaka/Library/Logs/com.bhavesh.auto-update/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/bdhaka/Library/Logs/com.bhavesh.auto-update/launchd.err.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
