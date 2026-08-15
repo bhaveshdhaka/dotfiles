@@ -1,0 +1,9 @@
+# This repository intentionally has no CI: there are no GitHub Actions
+# workflows (the captain's gh token has no `workflow` scope, so none can be
+# created or maintained). Validation happens through the local no-mistakes
+# gate before anything is pushed.
+#
+# Declaring no_ci: true tells the no-mistakes CI monitor to treat a PR with
+# zero registered checks as all-checks-passed instead of waiting indefinitely.
+# It is honored only from the trusted default-branch copy of this file.
+no_ci: true
