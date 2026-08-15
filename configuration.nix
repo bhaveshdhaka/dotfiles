@@ -47,9 +47,10 @@
   };
   homebrew = {
     enable = true;
-    # SAFETY: zap was disabled 2026-08-15 until the config declares the real
-    # system (gh, nextdns, tmux, node, adguard, baby-menu, etc.).
-    # Re-enable only after inventory+adoption lands.
+    # cleanup = "uninstall" is intentional and permanent (captain decision
+    # 2026-08-15): every switch uninstalls any formula/cask not declared
+    # below, so anything installed on this machine must be declared here.
+    # Do NOT change this to "zap" or "none".
     onActivation.cleanup = "uninstall";
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
@@ -66,9 +67,15 @@
     casks = [
       "adguard"
       "baby-menu"
+      "stremio"
       "telegram"
       "whatsapp"
       "wezterm"
+      "windows-app"  # Microsoft Windows App 11.3.8 (installs on next rebuild)
+      # "vlc"  # stays a manual DMG install (3.0.23, get.videolan.org) until the
+      # command_wrapper bug in nix-pinned brew 6.0.1 is fixed upstream - the cask
+      # aborts brew bundle (exit 1) at every switch. Not brew-managed; cleanup
+      # never removes it. Declare once the cask evaluates cleanly.
     ];
   };
 }
