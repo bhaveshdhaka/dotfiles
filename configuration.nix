@@ -47,9 +47,10 @@
   };
   homebrew = {
     enable = true;
-    # SAFETY: zap was disabled 2026-08-15 until the config declares the real
-    # system (gh, nextdns, tmux, node, adguard, baby-menu, etc.).
-    # Re-enable only after inventory+adoption lands.
+    # cleanup = "uninstall" is intentional and permanent (captain decision
+    # 2026-08-15): every switch uninstalls any formula/cask not declared
+    # below, so anything installed on this machine must be declared here.
+    # Do NOT change this to "zap" or "none".
     onActivation.cleanup = "uninstall";
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
