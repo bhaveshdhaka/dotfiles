@@ -80,6 +80,126 @@ Edit the config files in place, then apply:
 That's it.
 No separate build-and-copy step.
 
+## Automatic updates
+
+This machine updates itself, unattended, every **Sunday 03:00**: `launchd` fires
+the `com.bhavesh.auto-update` LaunchAgent (`com.bhavesh.auto-update.plist`),
+which runs `update-all.sh` — one orchestrator that holds the Mac awake
+(`caffeinate -dimsu`), runs each update layer in order, logs everything, and
+never prompts for a password.
+
+Steps, in order:
+
+1. `brew update && brew upgrade` (formulae + casks)
+2. `nix flake update` + `./rebuild.sh` (nix-darwin switch)
+3. `pi update --all` (pi + its extensions)
+4. `npm update -g` (AXI/npm tools)
+5. `bin/fm-update.sh` from `~/firstmate` (fast-forward only)
+
+**Failure policy:** each step runs independently. A failed step is logged with
+its name and the run continues with the next step, so one broken layer (e.g.
+the `vlc` cask on Homebrew 6.0.1's missing `command_wrapper` DSL) never blocks
+the others. The script exits non-zero if any step failed, so a failed Sunday
+run is visible in the log.
+
+### How the wake works
+
+This Mac sleeps after 1 minute idle, so a scheduled hardware wake is required:
+
+```sh
+# one-time, as captain (requires sudo):
+sudo pmset repeat wakeorpoweron S 02:55:00   # wake every Sunday 02:55
+
+# verify / remove:
+pmset -g sched
+sudo pmset repeat cancel                     # remove the schedule
+```
+
+The Mac wakes at 02:55, launchd fires the agent at 03:00, and `caffeinate`
+holds it awake during the run (it goes back to sleep ~1 min after finishing).
+Requirements for the wake to fire: the Mac is **sleeping** (not shut down) and
+on **AC power** — a powered-off or battery-only Sunday night means the run is
+missed (and launchd catches up the next time the Mac is used, logged then).
+
+### Logs
+
+- `~/Library/Logs/com.bhavesh.auto-update/update-<timestamp>.log` — the run log (newest 30 kept)
+- `~/Library/Logs/com.bhavesh.auto-update/launchd.{out,err}.log` — launchd-level capture
+
+### Run manually
+
+```sh
+./update-all.sh            # from the repo (works as ~/.dotfiles too)
+./update-all.sh --help     # usage + env overrides
+```
+
+`AUTO_UPDATE_SKIP_SUDOERS_CHECK=1 ./update-all.sh` skips the sudoers preflight
+(testing only — without the scoped sudoers the run would prompt, which the
+orchestrator must never do unattended).
+
+### Install & verify the schedule
+
+```sh
+mkdir -p ~/Library/LaunchAgents ~/Library/Logs/com.bhavesh.auto-update
+cp com.bhavesh.auto-update.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.bhavesh.auto-update.plist
+# modern alternative: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.bhavesh.auto-update.plist
+
+launchctl print gui/$(id -u)/com.bhavesh.auto-update | grep -A6 -E "calendar|next fire"
+pmset -g sched     # shows the Sunday 02:55 wake
+```
+
+Remove with `launchctl bootout gui/$(id -u)/com.bhavesh.auto-update` + `rm
+~/Library/LaunchAgents/com.bhavesh.auto-update.plist`. LaunchAgents run while
+you're logged in (a locked screen is fine) but not at the login window, and
+the Mac must be sleeping — not powered off — for the pmset wake.
+
+### The sudoers scope (reviewed before install — deliberately narrow)
+
+The orchestrator never prompts, which is only possible because of a scoped
+sudoers file. **You install it once, manually** — nothing in the repo ever
+installs it. The exact lines, for review (`sudoers/fm-update.sudoers`):
+
+```
+bdhaka ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+bdhaka ALL=(root) NOPASSWD: /usr/sbin/installer
+```
+
+```sh
+sudo install -m 0440 -o root -g wheel sudoers/fm-update.sudoers /etc/sudoers.d/fm-update
+sudo visudo -c -f /etc/sudoers.d/fm-update   # validate
+```
+
+That is the **whole scope**: `darwin-rebuild` (the nix-darwin switch) and
+`/usr/sbin/installer` (Homebrew pkg casks such as AdGuard run
+`sudo installer -pkg … -target /`). No blanket sudo, no `%admin ALL` lines,
+no `sudo -i`. If the file is missing or ineffective, `update-all.sh` aborts in
+preflight with a clear message instead of ever hanging on a password prompt.
+
+### Microsoft apps stop self-updating
+
+Microsoft AutoUpdate (MAU) is turned off so Microsoft apps (currently
+"Windows App") stop silently self-updating; Homebrew/manual installs own them.
+One-time, as captain (the key was verified against the installed MAU
+preferences):
+
+```sh
+defaults write com.microsoft.autoupdate2 HowToCheck -string "Manual"
+defaults read com.microsoft.autoupdate2 HowToCheck    # → Manual
+# optional, stronger: disable MAU's background agent
+# sudo launchctl disable system/com.microsoft.update.agent
+```
+
+Re-enable later with `HowToCheck` = `AutomaticCheck`. See `registry.md` for
+the full app & plugin registry (what's installed and how each thing updates).
+
+### Japan VPS variant
+
+`update-all-jp.sh` is the same orchestrator for the Japan server
+(`root@142.91.108.254`): pi, firstmate, herdr, on **cron** (no launchd, never
+sleeps, no sudoers needed — it runs as root). Ship the file + docs only; the
+captain deploys when he decides (one `cron` line, documented in the script).
+
 ## Make it yours
 
 This repo is mine.
@@ -105,8 +225,8 @@ programs.git = {
 };
 ```
 
-**Homebrew cleanup warning:** `configuration.nix` sets `homebrew.onActivation.cleanup = "zap"`.
-That means every time you switch, Homebrew removes any package or cask on your machine that isn't listed in the `brews` and `casks` arrays in `configuration.nix`.
+**Homebrew cleanup warning:** `configuration.nix` sets `homebrew.onActivation.cleanup = "uninstall"` — the captain's standing decision since 2026-08-15 (gentle cleanup; strict `zap` is never re-enabled without the captain's word).
+Every switch still uninstalls any package or cask on your machine that isn't listed in the `brews` and `casks` arrays in `configuration.nix`; `"uninstall"` is gentler than `zap` only in that it keeps a cask's data and config files (`brew uninstall`, not `brew uninstall --zap`).
 If you already have Homebrew stuff installed that isn't in that list, the first switch will uninstall it.
 Read through `brews` and `casks` before you run `bootstrap.sh` or `rebuild.sh` for the first time, and add anything you want to keep.
 
