@@ -66,9 +66,15 @@
     casks = [
       "adguard"
       "baby-menu"
+      "stremio"
       "telegram"
       "whatsapp"
       "wezterm"
+      "windows-app"  # Microsoft Windows App 11.3.8 (installs on next rebuild)
+      # "vlc"  # stays a manual DMG install (3.0.23, get.videolan.org) until the
+      # command_wrapper bug in nix-pinned brew 6.0.1 is fixed upstream - the cask
+      # aborts brew bundle (exit 1) at every switch. Not brew-managed; cleanup
+      # never removes it. Declare once the cask evaluates cleanly.
     ];
   };
 }

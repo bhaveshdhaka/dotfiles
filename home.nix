@@ -22,6 +22,15 @@ in
   fonts.fontconfig.enable = true;
   home.sessionVariables.EDITOR = "nvim";
 
+  # ~/.zprofile was a plain manual file; fold it into nix (identical content).
+  home.file.".zprofile".text = ''
+
+  eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+  export PATH="$HOME/.local/bin:$PATH"
+  # Launch pi with the firstmate distro from anywhere
+  alias fm='cd ~/firstmate && pi'
+  '';
+
   programs.zsh = {
     enable = true;
     autosuggestion.enable = true;      # ghost text from history
