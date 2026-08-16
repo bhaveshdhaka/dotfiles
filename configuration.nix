@@ -73,6 +73,7 @@
       "google-chrome"  # browser automation (re-declared: removed by the 2026-08-15 stale-checkout rebuild)
       "stremio"
       "telegram"
+      "tradingview"  # TradingView Desktop (charting)
       "whatsapp"
       "wezterm"
       "windows-app"  # Microsoft Windows App 11.3.8 (installs on next rebuild)
