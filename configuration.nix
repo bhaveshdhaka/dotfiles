@@ -63,10 +63,14 @@
       "nextdns"
       "node"
       "tmux"
+      "ffmpeg"  # audio/video tools (re-declared: removed by the 2026-08-15 stale-checkout rebuild)
+      "yt-dlp"  # video downloader (re-declared: removed by the 2026-08-15 stale-checkout rebuild)
+      "deno"    # JS/TS runtime (re-declared: removed by the 2026-08-15 stale-checkout rebuild)
     ];
     casks = [
       "adguard"
       "baby-menu"
+      "google-chrome"  # browser automation (re-declared: removed by the 2026-08-15 stale-checkout rebuild)
       "stremio"
       "telegram"
       "whatsapp"
