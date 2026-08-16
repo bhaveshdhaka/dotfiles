@@ -255,7 +255,7 @@ main() {
   fi
 
   run_step "brew" "brew update && brew upgrade" step_brew
-  run_step "nix" "nix flake update + rebuild.sh" step_nix
+  run_step "nix" "git pull --ff-only + nix flake update + rebuild.sh" step_nix
   run_step "pi" "pi update --all" step_pi
   run_step "npm" "npm update -g" step_npm
   run_step "firstmate" "bin/fm-update.sh (fast-forward only)" step_firstmate
