@@ -14,7 +14,7 @@ see README "Automatic updates"). The Japan VPS variant is `update-all-jp.sh`
 |---|---|---|---|
 | Homebrew formulae | `brew upgrade` | 1 (brew) | — (not on Japan) |
 | Homebrew casks | `brew upgrade` (pkg casks via `/usr/sbin/installer` NOPASSWD) | 1 (brew) | — |
-| Nix flake inputs + nix-darwin/home-manager | `nix flake update` + `./rebuild.sh` | 2 (nix) | — |
+| Nix flake inputs + nix-darwin/home-manager | `git pull --ff-only`, then `nix flake update` + `./rebuild.sh` | 2 (nix) | — |
 | Pi + pi extensions | `pi update --all` | 3 (pi) | 1 (pi) |
 | npm globals (/opt/homebrew) | `npm update -g` | 4 (npm) | optional |
 | firstmate + secondmates | `$HOME/firstmate/bin/fm-update.sh` (fast-forward only) | 5 (firstmate) | 2 (firstmate) |
@@ -32,6 +32,9 @@ Declared in `configuration.nix` → `homebrew.brews`. Updated by `brew upgrade`.
 - `nextdns` — DNS daemon (`/Library/LaunchDaemons/nextdns.plist`, `/etc/nextdns.conf`)
 - `node` — Node.js runtime (v26.x, arm64)
 - `tmux`
+- `ffmpeg` — audio/video tools (re-declared 2026-08-15: the stale-checkout rebuild removed them)
+- `yt-dlp` — video downloader (same)
+- `deno` — JS/TS runtime (same)
 
 Everything else in `brew list --formula` is a transitive dependency of these
 (ada-url, brotli, c-ares, … merve is a node dep, simdjson/simdutf are herdr deps).
@@ -44,12 +47,9 @@ Declared in `configuration.nix` → `homebrew.casks` (as captured). Updated by
 - `adguard` — **Pkg cask**: upgrade runs `sudo /usr/sbin/installer -pkg … -target /`
   → this is why the scoped sudoers grants `/usr/sbin/installer` NOPASSWD.
 - `baby-menu` — from the `kunchenguid/tap` tap (declared in `homebrew.taps`).
-- `telegram`, `wezterm`, `whatsapp`
-- `stremio` — **NOT yet declared in `configuration.nix`** (which declares only
-  adguard, baby-menu, telegram, whatsapp, wezterm): installed via `brew cask`
-  on the machine, pending declaration by the in-flight capture PR. Until that
-  PR lands, an activation (`onActivation.cleanup = "uninstall"`) would remove
-  it; `brew upgrade` keeps it updated in the meantime.
+- `google-chrome` — browser automation (re-declared 2026-08-15: the stale-checkout
+  rebuild removed the ad-hoc install, so the next switch reinstalls it)
+- `stremio`, `telegram`, `wezterm`, `whatsapp`, `windows-app`
 - `vlc` — **NOT brew-managed today**: the brew cask fails on Homebrew 6.0.1
   (missing `command_wrapper` cask DSL, same bug as alex313031-thorium).
   Installed manually from the get.videolan.org DMG (3.0.23, sha256 verified).
@@ -63,6 +63,11 @@ in `flake.lock` — `nix flake update` rewrites it (the working tree then has an
 uncommitted `flake.lock`; the captain reviews and commits after the Sunday run).
 `./rebuild.sh` runs `sudo … darwin-rebuild switch --flake ~/.dotfiles#mac`
 (the scoped sudoers NOPASSWD is what makes this unattended).
+
+The Mac's nix step first runs `git pull --ff-only` in the repo and **skips the
+step if that pull fails** — rebuilding a stale `configuration.nix` would let
+`cleanup = "uninstall"` remove software that newer merged configs declare
+(the 2026-08-15 incident).
 
 User packages from home-manager (`/etc/profiles/per-user/bdhaka/bin`): rg, fd,
 fzf, jq, lazygit, nvim, starship, zsh, Hack Nerd Font.

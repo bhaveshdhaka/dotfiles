@@ -15,8 +15,11 @@
 # Steps, in order (each is logged with its name):
 #   1. brew update && brew upgrade     formulae + casks; pkg casks use
 #                                      /usr/sbin/installer via the scoped sudoers
-#   2. nix flake update + ./rebuild.sh nix-darwin switch via darwin-rebuild
-#                                      (NOPASSWD in the scoped sudoers)
+#   2. git pull --ff-only +           never rebuild on a stale checkout (a stale
+#      nix flake update + ./rebuild.sh configuration.nix would make cleanup
+#                                      remove declared software); nix-darwin
+#                                      switch via darwin-rebuild (NOPASSWD in the
+#                                      scoped sudoers)
 #   3. pi update --all                 pi + its extensions (pinned packages stay
 #                                      pinned by design — see registry.md)
 #   4. npm update -g                   AXI/npm tools under /opt/homebrew
@@ -28,6 +31,11 @@
 #   cask on Homebrew 6.0.1's missing command_wrapper DSL) never blocks the
 #   other layers. The script exits NON-ZERO if any step failed, so a failed
 #   Sunday run is visible in the log and to launchd.
+#
+#   The nix step additionally pulls the repo first (git pull --ff-only) and
+#   NEVER rebuilds if that pull fails: a stale configuration.nix would make
+#   cleanup=uninstall remove software that newer merged configs declare (the
+#   2026-08-15 incident). Skipping the step beats uninstalling working tools.
 #
 # Invariants:
 #   - bash 3.2 (macOS /bin/bash) compatible — no bash 4+ features.
@@ -59,8 +67,8 @@ update-all.sh — unattended Mac update orchestrator
 
 Usage: ./update-all.sh [--help]
 
-Runs, in order: brew update+upgrade, nix flake update+rebuild.sh,
-pi update --all, npm update -g, firstmate bin/fm-update.sh.
+Runs, in order: brew update+upgrade, git pull --ff-only + nix flake
+update+rebuild.sh, pi update --all, npm update -g, firstmate bin/fm-update.sh.
 Holds the Mac awake (caffeinate -dimsu), logs to
 ~/Library/Logs/com.bhavesh.auto-update/update-<timestamp>.log, never prompts
 (requires the scoped sudoers — see README "Automatic updates"), and exits
@@ -142,6 +150,14 @@ step_brew() {
 
 step_nix() {
   cd "$REPO_DIR"
+  log "git pull --ff-only (never rebuild on a stale checkout)"
+  if ! git pull --ff-only; then
+    log "ERROR: git pull --ff-only failed — local checkout is stale or diverged; NOT rebuilding."
+    log "       A stale configuration.nix would let cleanup=uninstall remove software that"
+    log "       newer configs declare (the 2026-08-15 incident). Fix as captain and re-run:"
+    log "         git -C $REPO_DIR pull --ff-only"
+    return 1
+  fi
   log "nix flake update (rewrites flake.lock in the working tree — captain commits it later)"
   nix flake update
   log "rebuild.sh — darwin-rebuild switch (sudo via scoped NOPASSWD)"
@@ -239,7 +255,7 @@ main() {
   fi
 
   run_step "brew" "brew update && brew upgrade" step_brew
-  run_step "nix" "nix flake update + rebuild.sh" step_nix
+  run_step "nix" "git pull --ff-only + nix flake update + rebuild.sh" step_nix
   run_step "pi" "pi update --all" step_pi
   run_step "npm" "npm update -g" step_npm
   run_step "firstmate" "bin/fm-update.sh (fast-forward only)" step_firstmate
