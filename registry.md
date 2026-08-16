@@ -50,6 +50,7 @@ Declared in `configuration.nix` → `homebrew.casks` (as captured). Updated by
 - `google-chrome` — browser automation (re-declared 2026-08-15: the stale-checkout
   rebuild removed the ad-hoc install, so the next switch reinstalls it)
 - `stremio`, `telegram`, `wezterm`, `whatsapp`, `windows-app`
+- `tradingview` — TradingView Desktop (charting).
 - `vlc` — **NOT brew-managed today**: the brew cask fails on Homebrew 6.0.1
   (missing `command_wrapper` cask DSL, same bug as alex313031-thorium).
   Installed manually from the get.videolan.org DMG (3.0.23, sha256 verified).
