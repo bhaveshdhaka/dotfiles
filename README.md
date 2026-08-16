@@ -91,7 +91,7 @@ never prompts for a password.
 Steps, in order:
 
 1. `brew update && brew upgrade` (formulae + casks)
-2. `nix flake update` + `./rebuild.sh` (nix-darwin switch)
+2. `git pull --ff-only`, then `nix flake update` + `./rebuild.sh` (nix-darwin switch)
 3. `pi update --all` (pi + its extensions)
 4. `npm update -g` (AXI/npm tools)
 5. `bin/fm-update.sh` from `~/firstmate` (fast-forward only)
@@ -100,7 +100,10 @@ Steps, in order:
 its name and the run continues with the next step, so one broken layer (e.g.
 the `vlc` cask on Homebrew 6.0.1's missing `command_wrapper` DSL) never blocks
 the others. The script exits non-zero if any step failed, so a failed Sunday
-run is visible in the log.
+run is visible in the log. The nix step pulls the repo first and **never
+rebuilds on a stale checkout**: if `git pull --ff-only` fails, that step is
+skipped, because rebuilding a stale `configuration.nix` would make
+`cleanup = "uninstall"` remove software that newer merged configs declare.
 
 ### How the wake works
 
